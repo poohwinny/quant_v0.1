@@ -19,3 +19,45 @@ df
 #4) 해당 파일의 Headers를 확인하면 친절하게 Request URL을 보여준다.
 # http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd
 #그리고 후술 하겠지만 Headers에서 중요한 Form Data도 확인해 준다. (Form Data는 Headers 최하단에 있다.)
+
+
+#=============================
+
+# mysql DB 생성
+/*
+
+CREATE database QUANT_DATA DEFAULT character SET UTF8;
+SHOW databases;
+USE QUANT_DATA;
+select * from stock_index;
+*/
+
+!pip install sqlalchemy
+!pip install pymysql
+
+# 인덱스 데이터 읽어오기 (2003~현재)
+import FinanceDataReader as fdr
+
+# KOSPI index, 2003 ~ Now
+ks11 = fdr.DataReader('KS11', '2003-01-01')
+kospi_df = ks11.assign(INDEX_CD = 'KOSPI')
+kospi_df
+
+# DB 연결
+import pymysql
+from sqlalchemy import create_engine
+
+MYSQL_HOSTNAME = 'localhost' # you probably don't need to change this
+MYSQL_USER = 'root'
+MYSQL_PASSWORD = '1111'
+MYSQL_DATABASE = 'QUANT_DATA'
+
+connection_string = f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOSTNAME}/{MYSQL_DATABASE}'
+# connect_args = {'ssl': {'ca': '/content/rds-ca-2015-root.pem'}}
+
+db = create_engine(connection_string)
+
+kospi_df.to_sql(name='stock_index', con=db, if_exists='append')
+
+# 그래프
+kospi_df['Close'].plot(figsize=(15,5))
